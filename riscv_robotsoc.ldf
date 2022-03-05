@@ -2,7 +2,67 @@
 <BaliProject version="3.2" title="riscv_robotsoc" device="LFXP2-5E-5TN144C" default_implementation="brevia">
     <Options/>
     <Implementation title="brevia" dir="brevia" description="brevia" synthesis="lse" default_strategy="Strategy1">
-        <Options/>
+        <Options def_top="servant_timer" top="soc"/>
+        <Source name="source/soc.v" type="Verilog" type_short="Verilog">
+            <Options top_module="soc"/>
+        </Source>
+        <Source name="source/spis.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/wb_bram.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/wb_servant.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/wb_spis_master.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/serv/serv_alu.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/serv/serv_bufreg.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/serv/serv_csr.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/serv/serv_ctrl.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/serv/serv_decode.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/serv/serv_immdec.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/serv/serv_mem_if.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/serv/serv_rf_if.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/serv/serv_rf_ram.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/serv/serv_rf_ram_if.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/serv/serv_rf_top.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/serv/serv_state.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/serv/serv_top.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/serv/servant_arbiter.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="source/serv/servant_timer.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
         <Source name="riscv_robotsoc.lpf" type="Logic Preference" type_short="LPF">
             <Options/>
         </Source>
