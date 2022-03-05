@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BaliProject version="3.2" title="riscv_robotsoc" device="LFXP2-5E-5TN144C" default_implementation="brevia">
+    <Options/>
+    <Implementation title="brevia" dir="brevia" description="brevia" synthesis="lse" default_strategy="Strategy1">
+        <Options/>
+        <Source name="riscv_robotsoc.lpf" type="Logic Preference" type_short="LPF">
+            <Options/>
+        </Source>
+    </Implementation>
+    <Strategy name="Strategy1" file="riscv_robotsoc1.sty"/>
+</BaliProject>
