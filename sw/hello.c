@@ -14,6 +14,10 @@
  *
  * 0x40000C = Status, millisecond counter (read only)
  *  [31]=ebrake, [30:16]=unused, [15:0]=count
+ *
+ * 0x400010 = R/C Receiver PPM input, 2x channels
+ *  [24]=ch1 locked, [23:16]=ch1, [8]=ch0 locked, [7:0]=ch0
+ *  
  */
 
 volatile uint32_t *q = (uint32_t*)0x400000;

@@ -26,6 +26,7 @@ module gio(
      * will assert.
      */
     input           ebrake,
+    input [1:0]     ppm,
 
     output          trig,
     output [7:0]    pwm
@@ -61,6 +62,11 @@ module gio(
     wire [31:0] rdt_01;
     wire [31:0] rdt_23;
 
+    /* R/C receiver */
+    wire [31:0] rdt_ppm;
+    assign rdt_ppm[15:9]  = 7'h0;
+    assign rdt_ppm[31:25] = 7'h0;
+
     /* Address decoder
      * This is used to strobe the write enable on word aligned addresses. The
      * individual byte write enables are available as needed
@@ -79,7 +85,7 @@ module gio(
                 .rdt1(rdt_01),
                 .rdt2(rdt_23),
                 .rdt3({eb_rst, 15'h0, ms_cnt}), // Add limit switch inputs in status?
-                .rdt4(32'hdead0004),
+                .rdt4(rdt_ppm),
                 .rdt5(32'hdead0005),
                 .rdt6(32'hdead0006),
                 .rdt7(32'hdead0007));
@@ -121,6 +127,10 @@ module gio(
             .maga(wb_dat[23:16]), .magb(wb_dat[31:24]),
             .rdta(rdt_23[23:16]), .rdtb(rdt_23[31:24]),
             .pwma(pwm[6]), .pwmb(pwm[7]), .trig());
+
+
+    ppmi ppm_0(.clk(wb_clk), .ppm(ppm[0]), .lock(rdt_ppm[8]), .mag(rdt_ppm[7:0]));
+    ppmi ppm_1(.clk(wb_clk), .ppm(ppm[1]), .lock(rdt_ppm[24]),.mag(rdt_ppm[23:16]));
 
     
 endmodule

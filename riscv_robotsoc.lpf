@@ -28,8 +28,12 @@ LOCATE COMP "pwm[5]"    SITE "116"; # J4-16
 LOCATE COMP "pwm[6]"    SITE "115"; # J4-18
 LOCATE COMP "pwm[7]"    SITE "114"; # J4-20
 
-LOCATE COMP "pwm_en[0]" SITE "103"; # J4-3
-LOCATE COMP "pwm_in[0]" SITE "102"; # J4-5
+IOBUF  PORT "ppm[0]" PULLMODE=DOWN;
+LOCATE COMP "ppm[0]" SITE "103"; # J4-3
+
+IOBUF  PORT "ppm[1]" PULLMODE=DOWN;
+LOCATE COMP "ppm[1]" SITE "102"; # J4-5
+
 LOCATE COMP "pwm_en[1]" SITE "101"; # J4-7
 LOCATE COMP "pwm_in[1]" SITE "100"; # J4-9
 LOCATE COMP "pwm_en[2]" SITE "99";  # J4-11
