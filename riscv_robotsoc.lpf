@@ -1,6 +1,6 @@
 BLOCK RESETPATHS;
 BLOCK ASYNCPATHS;
-IOBUF ALLPORTS IO_TYPE=LVCMOS33 ;
+IOBUF ALLPORTS IO_TYPE=LVCMOS33 PULLMODE=NONE;
 
 IOBUF PORT "clk" IO_TYPE=LVCMOS33 PULLMODE=UP ;
 
@@ -18,29 +18,32 @@ LOCATE COMP "spi_csn" SITE "28";
 IOBUF  PORT "ebrake"    PULLMODE=UP;
 LOCATE COMP "ebrake"    SITE "55";  # SW1D (4)
 
-LOCATE COMP "pwm[0]"    SITE "69";  # J4-4
-LOCATE COMP "pwm[1]"    SITE "66";  # J4-6
-LOCATE COMP "pwm[2]"    SITE "65";  # J4-8
-LOCATE COMP "pwm[3]"    SITE "62";  # J4-10
-LOCATE COMP "pwm[4]"    SITE "61";  # J4-12
-#                                   # J4-14 is GND
-LOCATE COMP "pwm[5]"    SITE "116"; # J4-16
-LOCATE COMP "pwm[6]"    SITE "115"; # J4-18
-LOCATE COMP "pwm[7]"    SITE "114"; # J4-20
+LOCATE COMP "pwmo[0]" SITE "69";  # J4-4
+LOCATE COMP "pwmo[1]" SITE "66";  # J4-6
+LOCATE COMP "pwmo[2]" SITE "65";  # J4-8
+LOCATE COMP "pwmo[3]" SITE "62";  # J4-10
+LOCATE COMP "pwmo[4]" SITE "61";  # J4-12
+#                                 # J4-14 is GND
+LOCATE COMP "pwmo[5]" SITE "116"; # J4-16
+LOCATE COMP "pwmo[6]" SITE "115"; # J4-18
+LOCATE COMP "pwmo[7]" SITE "114"; # J4-20
 
-IOBUF  PORT "ppm[0]" PULLMODE=DOWN;
-LOCATE COMP "ppm[0]" SITE "103"; # J4-3
+IOBUF  PORT "ppmi[0]" PULLMODE=DOWN;
+LOCATE COMP "ppmi[0]" SITE "103"; # J4-3
 
-IOBUF  PORT "ppm[1]" PULLMODE=DOWN;
-LOCATE COMP "ppm[1]" SITE "102"; # J4-5
+IOBUF  PORT "ppmi[1]" PULLMODE=DOWN;
+LOCATE COMP "ppmi[1]" SITE "102"; # J4-5
 
-LOCATE COMP "pwm_en[1]" SITE "101"; # J4-7
-LOCATE COMP "pwm_in[1]" SITE "100"; # J4-9
-LOCATE COMP "pwm_en[2]" SITE "99";  # J4-11
+LOCATE COMP "ppmo[0]" SITE "101"; # J4-7
+LOCATE COMP "ppmo[1]" SITE "100"; # J4-9
+LOCATE COMP "ppmo[2]" SITE "99";  # J4-11
 #                                   # J4-13 is GND
-LOCATE COMP "pwm_in[2]" SITE "98";  # J4-15
-LOCATE COMP "pwm_en[3]" SITE "96";  # J4-17
-LOCATE COMP "pwm_in[3]" SITE "94";  # J4-19
+LOCATE COMP "ppmo[3]" SITE "98";  # J4-15
+LOCATE COMP "ppmo[4]" SITE "96";  # J4-17
+LOCATE COMP "ppmo[5]" SITE "94";  # J4-19
+LOCATE COMP "ppmo[6]" SITE "93";  # J4-21
+LOCATE COMP "ppmo[7]" SITE "92";  # J4-23
+LOCATE COMP "ppms"    SITE "91";  # J4-27
 
 
 LOCATE COMP "trigger" SITE "104";

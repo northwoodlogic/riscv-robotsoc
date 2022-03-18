@@ -72,6 +72,9 @@
         <Source name="source/ppmi.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
+        <Source name="source/ppmo.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
         <Source name="riscv_robotsoc.lpf" type="Logic Preference" type_short="LPF">
             <Options/>
         </Source>

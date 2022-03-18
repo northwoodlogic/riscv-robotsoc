@@ -14,8 +14,11 @@ module soc(
 
 
     // I/O stuff
-    input   [1:0] ppm, // R/C receiver servo pulse input
-    output  [7:0] pwm,
+    input   [1:0] ppmi, // R/C receiver servo pulse input
+    output        ppms,
+    output  [7:0] ppmo,
+
+    output  [7:0] pwmo,
 //  output  [3:0] pwm_en, // Channel pair enable
 //  input   [3:0] pwm_in, // Channel pair inhibit
     output  trigger
@@ -162,7 +165,8 @@ module soc(
         .wb_rst(1'b0),
         .ebrake(ebrake),
 
-        .ppm(ppm),
+        .ppmi(ppmi),
+        .ppmo(ppmo), .ppms(ppms),
     
         .wb_cyc(wb_gio_cyc),    .wb_stb(wb_gio_stb),    .wb_we(wb_gio_we),
         .wb_sel(wb_gio_sel),    .wb_adr(wb_gio_adr),    .wb_dat(wb_gio_dat),
@@ -171,7 +175,7 @@ module soc(
         .q(gio_q),
 
         /* I/O block stuff */
-        .pwm(pwm), .trig(trigger)
+        .pwmo(pwmo), .trig(trigger)
     );
 
 endmodule

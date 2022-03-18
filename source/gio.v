@@ -26,12 +26,14 @@ module gio(
      * will assert.
      */
     input           ebrake,
-    input [1:0]     ppm,
+    input [1:0]     ppmi,
 
     output          trig,
-    output [7:0]    pwm
-);
+    output [7:0]    pwmo,
 
+    output          ppms,   /* PPM stream */
+    output  [7:0]   ppmo    /* R/C servo demuxed */
+);
 
     reg ack;
     assign wb_ack = ack;
@@ -39,8 +41,9 @@ module gio(
     reg [31:0] q_dat;
     assign q = q_dat[7:0];
 
-    /* free running millisecond counter. It's 16 bits and it rolls over every
-     * 65.5 seconds */
+    /*
+     * Free running millisecond counter, rolls over every 65.5 seconds
+     */
     reg [15:0] ms_cnt;
     reg [15:0] ms_div;
     wire       ms_tck = (ms_div == 16'd49999);
@@ -49,48 +52,63 @@ module gio(
         ms_cnt <= (ms_tck) ? ms_cnt + 1 : ms_cnt;
     end
 
+    /*
+     * Emergency brake input isn't synchronized by top level module.
+     */
     reg [1:0] eb_sync;
     wire eb_rst = eb_sync[1];
     always @(posedge wb_clk)
         eb_sync <= {eb_sync[0], ebrake};
 
+    /* Decoded write enable */
+    wire [7:0] we_strobe;
+    wire wstb_q     = we_strobe[0];
+    wire we_pwmo_03 = we_strobe[1];
+    wire we_pwmo_47 = we_strobe[2];
+    wire we_ppmo_00 = we_strobe[6];
+    wire we_ppmo_01 = we_strobe[7];
 
-    wire [7:0] strobe;
-    wire wstb_q     = strobe[0];
-    wire wstb_hb_01 = strobe[1];
-    wire wstb_hb_23 = strobe[2];
-    wire [31:0] rdt_01;
-    wire [31:0] rdt_23;
+    /* PWM outputs */
+    wire [31:0] rdt_pwmo_03;
+    wire [31:0] rdt_pwmo_47;
 
-    /* R/C receiver */
-    wire [31:0] rdt_ppm;
-    assign rdt_ppm[15:9]  = 7'h0;
-    assign rdt_ppm[31:25] = 7'h0;
+    /* R/C transmitter output */
+    wire [31:0] rdt_ppmo_03;
+    wire [31:0] rdt_ppmo_47;
 
-    /* Address decoder
-     * This is used to strobe the write enable on word aligned addresses. The
-     * individual byte write enables are available as needed
+    /* R/C receiver input */
+    wire [31:0] rdt_ppmi_01;
+    assign rdt_ppmi_01[15:9]  = 7'h0;
+    assign rdt_ppmi_01[31:25] = 7'h0;
+
+    /*
+     * Write enable decoder:
+     * This is used to strobe the write enable on word aligned addresses.
+     * Individual byte write enables are available as needed.
      */
     dec3x8 wadr_decode(
-                .en(wb_cyc & wb_stb & wb_we),
-                .adr(wb_adr[4:2]),
-                .sel(strobe));
-    /* Return data multiplexer. There are no byte level read side effects so
-     * byte selects are ignored. Return data is always the full 32-bit word
+        .en(wb_cyc & wb_stb & wb_we),
+        .adr(wb_adr[4:2]),
+        .sel(we_strobe));
+    /*
+     * Return data mux:
+     * There are no byte level read side effects so byte selects are ignored.
+     * Return data is always the full 32-bit word.
      */
     mux3x8 rdat_decode(
-                .adr(wb_adr[4:2]),
-                .rdt(wb_rdt),
-                .rdt0(q_dat),
-                .rdt1(rdt_01),
-                .rdt2(rdt_23),
-                .rdt3({eb_rst, 15'h0, ms_cnt}), // Add limit switch inputs in status?
-                .rdt4(rdt_ppm),
-                .rdt5(32'hdead0005),
-                .rdt6(32'hdead0006),
-                .rdt7(32'hdead0007));
+        .adr(wb_adr[4:2]),
+        .rdt(wb_rdt),
+        .rdt0(q_dat),
+        .rdt1(rdt_pwmo_03),
+        .rdt2(rdt_pwmo_47),
+        .rdt3({eb_rst, 15'h0, ms_cnt}), // Add limit switch inputs in status?
+        .rdt4(rdt_ppmi_01),
+        .rdt5(32'hdead0005),
+        .rdt6(rdt_ppmo_03),
+        .rdt7(rdt_ppmo_47));
 
     always @(posedge wb_clk) begin
+        /* All modules return data within a single cycle */
         ack <= !ack && wb_cyc && wb_stb;
         
         if (wb_rst) begin
@@ -104,34 +122,51 @@ module gio(
 
     end
 
-    pcpwm dual_halfbridge_0(.clk(wb_clk), .rst(eb_rst),
-            .we_a(wstb_hb_01 & wb_sel[0]), .we_b(wstb_hb_01 & wb_sel[1]),
-            .maga(wb_dat[7:0]), .magb(wb_dat[15:8]),
-            .rdta(rdt_01[7:0]), .rdtb(rdt_01[15:8]),
-            .pwma(pwm[0]), .pwmb(pwm[1]), .trig(trig));
+    /* 8x pulse width modulators */
+    pcpwm hb_01(.clk(wb_clk), .rst(eb_rst), .trig(),
+        .we_a(we_pwmo_03 & wb_sel[0]),  .we_b(we_pwmo_03 & wb_sel[1]),
+        .maga(wb_dat[7:0]),             .magb(wb_dat[15:8]),
+        .rdta(rdt_pwmo_03[7:0]),        .rdtb(rdt_pwmo_03[15:8]),
+        .pwma(pwmo[0]),                 .pwmb(pwmo[1])
+    );
 
-    pcpwm dual_halfbridge_1(.clk(wb_clk), .rst(eb_rst),
-            .we_a(wstb_hb_01 & wb_sel[2]), .we_b(wstb_hb_01 & wb_sel[3]),
-            .maga(wb_dat[23:16]), .magb(wb_dat[31:24]),
-            .rdta(rdt_01[23:16]), .rdtb(rdt_01[31:24]),
-            .pwma(pwm[2]), .pwmb(pwm[3]), .trig());
+    pcpwm hb_23(.clk(wb_clk), .rst(eb_rst), .trig(),
+        .we_a(we_pwmo_03 & wb_sel[2]),  .we_b(we_pwmo_03 & wb_sel[3]),
+        .maga(wb_dat[23:16]),           .magb(wb_dat[31:24]),
+        .rdta(rdt_pwmo_03[23:16]),      .rdtb(rdt_pwmo_03[31:24]),
+        .pwma(pwmo[2]),                 .pwmb(pwmo[3])
+    );
 
-    pcpwm dual_halfbridge_2(.clk(wb_clk), .rst(eb_rst),
-            .we_a(wstb_hb_23 & wb_sel[0]), .we_b(wstb_hb_23 & wb_sel[1]),
-            .maga(wb_dat[7:0]), .magb(wb_dat[15:8]),
-            .rdta(rdt_23[7:0]), .rdtb(rdt_23[15:8]),
-            .pwma(pwm[4]), .pwmb(pwm[5]), .trig());
+    pcpwm hb_45(.clk(wb_clk), .rst(eb_rst), .trig(),
+        .we_a(we_pwmo_47 & wb_sel[0]),  .we_b(we_pwmo_47 & wb_sel[1]),
+        .maga(wb_dat[7:0]),             .magb(wb_dat[15:8]),
+        .rdta(rdt_pwmo_47[7:0]),        .rdtb(rdt_pwmo_47[15:8]),
+        .pwma(pwmo[4]),                 .pwmb(pwmo[5])
+    );
 
-    pcpwm dual_halfbridge_3(.clk(wb_clk), .rst(eb_rst),
-            .we_a(wstb_hb_23 & wb_sel[2]), .we_b(wstb_hb_23 & wb_sel[3]),
-            .maga(wb_dat[23:16]), .magb(wb_dat[31:24]),
-            .rdta(rdt_23[23:16]), .rdtb(rdt_23[31:24]),
-            .pwma(pwm[6]), .pwmb(pwm[7]), .trig());
+    pcpwm hb_67(.clk(wb_clk), .rst(eb_rst), .trig(),
+        .we_a(we_pwmo_47 & wb_sel[2]),  .we_b(we_pwmo_47 & wb_sel[3]),
+        .maga(wb_dat[23:16]),           .magb(wb_dat[31:24]),
+        .rdta(rdt_pwmo_47[23:16]),      .rdtb(rdt_pwmo_47[31:24]),
+        .pwma(pwmo[6]),                 .pwmb(pwmo[7])
+    );
 
+    /* 2x pulse position inputs */
+    ppmi ppmi_00(.clk(wb_clk),          .ppm(ppmi[0]),
+        .lock(rdt_ppmi_01[8]),          .mag(rdt_ppmi_01[7:0])
+    );
 
-    ppmi ppm_0(.clk(wb_clk), .ppm(ppm[0]), .lock(rdt_ppm[8]), .mag(rdt_ppm[7:0]));
-    ppmi ppm_1(.clk(wb_clk), .ppm(ppm[1]), .lock(rdt_ppm[24]),.mag(rdt_ppm[23:16]));
+    ppmi ppmi_01(.clk(wb_clk),          .ppm(ppmi[1]),
+        .lock(rdt_ppmi_01[24]),         .mag(rdt_ppmi_01[23:16])
+    );
 
+    /* 8x pulse position + ppm stream outputs */
+    ppmo ppmo_07(.clk(wb_clk), .rst(eb_rst), .trig(trig),
+        .dat(wb_dat),                   .sel(wb_sel),
+        .we_03(we_ppmo_00),             .we_47(we_ppmo_01),
+        .rdt_03(rdt_ppmo_03),           .rdt_47(rdt_ppmo_47),
+        .ppms(ppms),                    .ppmo(ppmo)
+    );
     
 endmodule
 
