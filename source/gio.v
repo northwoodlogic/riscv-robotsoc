@@ -17,7 +17,8 @@ module gio(
     output  [31:0]  wb_rdt,
     output          wb_ack,
     
-    output  [7:0]   q, // 4x LED, 4x GPO
+    output  [7:0]   gpo, // 7x LED, 1x drive enable
+    input   [7:0]   gpi, // 8x active low
 
     /*
      * Emergency brake input. It's an active high signal with a pullup enabled
@@ -38,8 +39,6 @@ module gio(
     reg ack;
     assign wb_ack = ack;
 
-    reg [31:0] q_dat;
-    assign q = q_dat[7:0];
 
     /*
      * Free running millisecond counter, rolls over every 65.5 seconds
@@ -62,11 +61,15 @@ module gio(
 
     /* Decoded write enable */
     wire [7:0] we_strobe;
-    wire wstb_q     = we_strobe[0];
+    wire we_gpio_07 = we_strobe[0];
     wire we_pwmo_03 = we_strobe[1];
     wire we_pwmo_47 = we_strobe[2];
     wire we_ppmo_00 = we_strobe[6];
     wire we_ppmo_01 = we_strobe[7];
+
+    /* GPIO inputs & outputs */
+    wire [31:0] rdt_gpio_07;
+    assign rdt_gpio_07[31:16] = 16'h0;
 
     /* PWM outputs */
     wire [31:0] rdt_pwmo_03;
@@ -98,7 +101,7 @@ module gio(
     mux3x8 rdat_decode(
         .adr(wb_adr[4:2]),
         .rdt(wb_rdt),
-        .rdt0(q_dat),
+        .rdt0(rdt_gpio_07),
         .rdt1(rdt_pwmo_03),
         .rdt2(rdt_pwmo_47),
         .rdt3({eb_rst, 15'h0, ms_cnt}), // Add limit switch inputs in status?
@@ -110,17 +113,14 @@ module gio(
     always @(posedge wb_clk) begin
         /* All modules return data within a single cycle */
         ack <= !ack && wb_cyc && wb_stb;
-        
-        if (wb_rst) begin
-            q_dat <= 32'h0;
-        end else if (wstb_q) begin
-            q_dat[7:0]      <= (wb_sel[0])  ? wb_dat[7:0]   : q_dat[7:0];
-            q_dat[15:8]     <= (wb_sel[1])  ? wb_dat[15:8]  : q_dat[15:8];
-            q_dat[23:16]    <= (wb_sel[2])  ? wb_dat[23:16] : q_dat[23:16];
-            q_dat[31:24]    <= (wb_sel[3])  ? wb_dat[31:24] : q_dat[31:24];
-        end
-
     end
+
+    /* 8x discrete inputs, 8x discrete outputs */
+    gpio gpio_07(.clk(wb_clk),
+        .we(we_gpio_07),                .sel(wb_sel),
+        .dat(wb_dat),                   .rdt(rdt_gpio_07[15:0]),
+        .gpi(gpi),                      .gpo(gpo)
+    );
 
     /* 8x pulse width modulators */
     pcpwm hb_01(.clk(wb_clk), .rst(eb_rst), .trig(),

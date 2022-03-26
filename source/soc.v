@@ -4,8 +4,10 @@
 
 module soc(
     input   clk,
-    output [3:0] led,
-    input       ebrake,
+    output [7:0] led, // Indicators | LEDs
+    input  [7:0] gpi,
+    input       ebrake, /* Emergency brake */
+    output      edrive, /* Motor drive enable */
 
     input   spi_csn,
     input   spi_clk,
@@ -19,8 +21,6 @@ module soc(
     output  [7:0] ppmo,
 
     output  [7:0] pwmo,
-//  output  [3:0] pwm_en, // Channel pair enable
-//  input   [3:0] pwm_in, // Channel pair inhibit
     output  trigger
 );
     
@@ -82,7 +82,8 @@ module soc(
     wire    [7:0]   gio_q;
     // General Purpose I/O Block
     ///////////////////////////
-    assign led[2:0] = ~gio_q;
+    assign led[6:0] = ~gio_q;
+    assign edrive = gio_q[7];
     
 
     /*
@@ -90,7 +91,7 @@ module soc(
      * It's used to hold the CPU in reset or not.
      */
     reg cpu_reset = 1'h1;
-    assign led[3] = ~cpu_reset;
+    assign led[7] = ~cpu_reset;
     wire cpu_reset_stb = (wb_spi_adr[20] == 1'b1) && wb_spi_cyc;
     
     always @ (posedge clk) begin
@@ -172,7 +173,8 @@ module soc(
         .wb_sel(wb_gio_sel),    .wb_adr(wb_gio_adr),    .wb_dat(wb_gio_dat),
         .wb_rdt(wb_gio_rdt),    .wb_ack(wb_gio_ack),
     
-        .q(gio_q),
+        .gpo(gio_q),
+        .gpi(~gpi),
 
         /* I/O block stuff */
         .pwmo(pwmo), .trig(trigger)
