@@ -34,7 +34,7 @@
  */
 
 /* Block ram size, in bytes. Depth is the number of 32-bit words */
-#define BRAM_SIZE   16384
+#define BRAM_SIZE   18432
 #define BRAM_DEPTH (BRAM_SIZE / 4)
 
 int

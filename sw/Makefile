@@ -2,7 +2,7 @@
 all : hello.elf
 
 hello.elf: crt0.s hello.c machine.ld
-	riscv32-unknown-elf-gcc -g -ffreestanding -O0 -Wl,--gc-sections \
+	riscv32-unknown-elf-gcc -Wall -g -ffreestanding -O2 -Wl,--gc-sections \
 		-nostartfiles  \
 		-Wl,-T,machine.ld -Xlinker -Map=hello.map\
 		crt0.s hello.c -o hello.elf

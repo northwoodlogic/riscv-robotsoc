@@ -61,11 +61,13 @@ module gio(
 
     /* Decoded write enable */
     wire [7:0] we_strobe;
-    wire we_gpio_07 = we_strobe[0];
-    wire we_pwmo_03 = we_strobe[1];
-    wire we_pwmo_47 = we_strobe[2];
-    wire we_ppmo_00 = we_strobe[6];
-    wire we_ppmo_01 = we_strobe[7];
+    /* we_strobe[1:0] are unused */
+    wire we_ppmo_03 = we_strobe[2];
+    wire we_ppmo_47 = we_strobe[3];
+    wire we_pwmo_03 = we_strobe[4];
+    wire we_pwmo_47 = we_strobe[5];
+    wire we_gpio_07 = we_strobe[6];
+    /* we_strobe[7] is reserved for pulse counter */
 
     /* GPIO inputs & outputs */
     wire [31:0] rdt_gpio_07;
@@ -101,14 +103,15 @@ module gio(
     mux3x8 rdat_decode(
         .adr(wb_adr[4:2]),
         .rdt(wb_rdt),
-        .rdt0(rdt_gpio_07),
-        .rdt1(rdt_pwmo_03),
-        .rdt2(rdt_pwmo_47),
-        .rdt3({eb_rst, 15'h0, ms_cnt}), // Add limit switch inputs in status?
-        .rdt4(rdt_ppmi_01),
-        .rdt5(32'hdead0005),
-        .rdt6(rdt_ppmo_03),
-        .rdt7(rdt_ppmo_47));
+        .rdt0({eb_rst, 15'h0, ms_cnt}), // Add limit switch input status
+        .rdt1(rdt_ppmi_01),
+        .rdt2(rdt_ppmo_03),
+        .rdt3(rdt_ppmo_47),
+        .rdt4(rdt_pwmo_03),
+        .rdt5(rdt_pwmo_47),
+        .rdt6(rdt_gpio_07),
+        .rdt7(32'hdead0005)
+    );
 
     always @(posedge wb_clk) begin
         /* All modules return data within a single cycle */
@@ -163,7 +166,7 @@ module gio(
     /* 8x pulse position + ppm stream outputs */
     ppmo ppmo_07(.clk(wb_clk), .rst(eb_rst), .trig(trig),
         .dat(wb_dat),                   .sel(wb_sel),
-        .we_03(we_ppmo_00),             .we_47(we_ppmo_01),
+        .we_03(we_ppmo_03),             .we_47(we_ppmo_47),
         .rdt_03(rdt_ppmo_03),           .rdt_47(rdt_ppmo_47),
         .ppms(ppms),                    .ppmo(ppmo)
     );

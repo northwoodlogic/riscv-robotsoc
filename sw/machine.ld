@@ -4,8 +4,8 @@ OUTPUT_ARCH(riscv)
 
 MEMORY
 {
-   RAM (rwx)  : ORIGIN = 0x0, LENGTH = 16384 - 16
-   SHM (rw)   : ORIGIN = 16384 - 16, LENGTH = 16
+   RAM (rwx)  : ORIGIN = 0x0, LENGTH = 18432 - 16
+   SHM (rw)   : ORIGIN = 18432 - 16, LENGTH = 16
 }
 
 ENTRY(_start)

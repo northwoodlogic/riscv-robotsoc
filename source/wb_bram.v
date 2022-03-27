@@ -6,11 +6,14 @@ module wb_bram(
 	input clk,
 	input rst,
 	
-// This a 4Kx32 RAM.
+// This a 4Kx32 RAM + 2KB
 // The lower two address bits are unused but they're
 // declared in the module for clarity.
 // 2^14 == 16384 bytes
-	input  [13:0] 	adr_i,
+// The 15'th address bit is needed to support 2KB more
+// RAM from the 9'th block ram
+//
+	input  [14:0] 	adr_i,
 	input  [31:0] 	dat_i,
 	output [31:0] 	dat_o,
 	input  [3:0]  	sel_i,
@@ -33,8 +36,8 @@ module wb_bram(
 	// which delays the ack output by 1 cycle. Therefore, the
 	// data is valid on the same clock period as ACK=1.
 	pmi_ram_dq_be
-		#(	.pmi_addr_depth(4096),
-			.pmi_addr_width(12),
+		#(	.pmi_addr_depth(4608),
+			.pmi_addr_width(13),
 			.pmi_data_width(32),
 			.pmi_regmode("noreg"),
 			.pmi_gsr("disable"),
@@ -48,7 +51,7 @@ module wb_bram(
 			.module_type("pmi_ram_dq_be"))
 	rdq
 	(   .Data(dat_i),
-		.Address(adr_i[13:2]),
+		.Address(adr_i[14:2]),
 		.Clock(clk),
 		.ClockEn(1'b1), /* Note: could put strobe signal here */
 		.WE(we),
