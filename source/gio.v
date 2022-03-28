@@ -16,6 +16,8 @@ module gio(
     input   [31:0]  wb_dat,
     output  [31:0]  wb_rdt,
     output          wb_ack,
+
+    input   [3:0]   busid,
     
     output  [7:0]   gpo, // 7x LED, 1x drive enable
     input   [7:0]   gpi, // 8x active low
@@ -103,7 +105,7 @@ module gio(
     mux3x8 rdat_decode(
         .adr(wb_adr[4:2]),
         .rdt(wb_rdt),
-        .rdt0({eb_rst, 15'h0, ms_cnt}), // Add limit switch input status
+        .rdt0({eb_rst, 11'h0, busid, ms_cnt}), // Add limit switch input status
         .rdt1(rdt_ppmi_01),
         .rdt2(rdt_ppmo_03),
         .rdt3(rdt_ppmo_47),

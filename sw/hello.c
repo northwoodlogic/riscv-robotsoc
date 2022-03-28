@@ -3,7 +3,7 @@
 
 /* 
  * 0x400000 = Status, millisecond counter (read only)
- *  [31]=ebrake, [30:16]=unused, [15:0]=count
+ *  [31]=ebrake, [30:20]=unused, [19:16]=hart, [15:0]=count
  *
  * 0x400004 = R/C Receiver PPM input, 2x channels (read only)
  *  [24]=ch1 locked, [23:16]=ch1, [8]=ch0 locked, [7:0]=ch0
@@ -67,7 +67,7 @@ typedef struct {
 /* robot-soc I/O peripheral block */
 typedef struct {
     uint16_t    tick;
-    uint8_t     _u0;
+    uint8_t     hart;
     uint8_t     ebrake;
 
     rsio_ppmi_t ppmi[2];
@@ -124,6 +124,7 @@ volatile int counter = 0;
 void
 main(void)
 {
+    
     mtimer_t d6;
     mtimer_init(&d6, 2000);
 
@@ -146,6 +147,7 @@ main(void)
     uint16_t elapsed;
     uint16_t last = rsio->tick;
     while (1) {
+        shared_mem[2] = rsio->hart;
         shared_mem[0]++;
         
         /*

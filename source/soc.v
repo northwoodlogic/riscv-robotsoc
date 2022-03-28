@@ -27,6 +27,7 @@ module soc(
     
     ////////////////////////////
     // BUS Mux
+    // CPU Interface
     wire            wb_cpu_cyc;
     wire            wb_cpu_stb;
     wire            wb_cpu_we;
@@ -35,6 +36,15 @@ module soc(
     wire    [31:0]  wb_cpu_adr;
     wire    [31:0]  wb_cpu_dat;
     wire    [31:0]  wb_cpu_rdt;
+    // AUX Interface
+    wire            wb_aux_cyc;
+    wire            wb_aux_stb;
+    wire            wb_aux_we;
+    wire            wb_aux_ack;
+    wire    [3:0]   wb_aux_sel;
+    wire    [31:0]  wb_aux_adr;
+    wire    [31:0]  wb_aux_dat;
+    wire    [31:0]  wb_aux_rdt;
     /* SPI Interface */
     wire            wb_spi_cyc;
     wire            wb_spi_stb;
@@ -53,6 +63,8 @@ module soc(
     wire    [31:0]  wb_bus_adr;
     wire    [31:0]  wb_bus_dat;
     wire    [31:0]  wb_bus_rdt;
+
+    wire    [3:0]   busid;
     // BUS Mux
     ////////////////////////////
 
@@ -82,7 +94,7 @@ module soc(
     wire    [7:0]   gio_q;
     // General Purpose I/O Block
     ///////////////////////////
-    assign led[6:0] = ~gio_q;
+    assign led[5:0] = ~gio_q;
     assign edrive = gio_q[7];
     
 
@@ -90,23 +102,34 @@ module soc(
      * This is set in a write-only register settable by the SPI master.
      * It's used to hold the CPU in reset or not.
      */
-    reg cpu_reset = 1'h1;
-    assign led[7] = ~cpu_reset;
+    reg [1:0] cpu_reset = 2'b11;
+    assign led[7] = ~cpu_reset[0];
+    assign led[6] = ~cpu_reset[1];
     wire cpu_reset_stb = (wb_spi_adr[20] == 1'b1) && wb_spi_cyc;
     
     always @ (posedge clk) begin
-        cpu_reset <= (cpu_reset_stb & wb_spi_we) ? wb_spi_dat[0] : cpu_reset;           
+        cpu_reset <= (cpu_reset_stb & wb_spi_we) ? wb_spi_dat[1:0] : cpu_reset;           
     end
 
 
-    /* SERV RISC-V CPU implemented with single wishbone bus master interface */
+    /* CPU0 - A SERV RISC-V CPU implemented with single wishbone bus master interface */
     wb_servant cpu (
         .wb_clk(clk),
-        .wb_rst(cpu_reset),
+        .wb_rst(cpu_reset[0]),
 
         .wb_cpu_cyc(wb_cpu_cyc),    .wb_cpu_stb(wb_cpu_stb),    .wb_cpu_we(wb_cpu_we),
         .wb_cpu_ack(wb_cpu_ack),    .wb_cpu_sel(wb_cpu_sel),    .wb_cpu_adr(wb_cpu_adr),
         .wb_cpu_dat(wb_cpu_dat),    .wb_cpu_rdt(wb_cpu_rdt)
+    );
+
+    /* CPU1 - Another SERV RISC-V CPU */
+    wb_servant aux (
+        .wb_clk(clk),
+        .wb_rst(cpu_reset[1]),
+
+        .wb_cpu_cyc(wb_aux_cyc),    .wb_cpu_stb(wb_aux_stb),    .wb_cpu_we(wb_aux_we),
+        .wb_cpu_ack(wb_aux_ack),    .wb_cpu_sel(wb_aux_sel),    .wb_cpu_adr(wb_aux_adr),
+        .wb_cpu_dat(wb_aux_dat),    .wb_cpu_rdt(wb_aux_rdt)
     );
 
     /*
@@ -134,15 +157,22 @@ module soc(
     );
      
     bussel bmux(
-        .clk(clk),
+        .clk(clk), .busid(busid),
         /* CPU Interface */
         .wb_cpu_cyc(wb_cpu_cyc),    .wb_cpu_stb(wb_cpu_stb),    .wb_cpu_we(wb_cpu_we),
         .wb_cpu_ack(wb_cpu_ack),    .wb_cpu_sel(wb_cpu_sel),    .wb_cpu_adr(wb_cpu_adr),
         .wb_cpu_dat(wb_cpu_dat),    .wb_cpu_rdt(wb_cpu_rdt),
+
+        /* AUX Interface */
+        .wb_aux_cyc(wb_aux_cyc),    .wb_aux_stb(wb_aux_stb),    .wb_aux_we(wb_aux_we),
+        .wb_aux_ack(wb_aux_ack),    .wb_aux_sel(wb_aux_sel),    .wb_aux_adr(wb_aux_adr),
+        .wb_aux_dat(wb_aux_dat),    .wb_aux_rdt(wb_aux_rdt),
+
         /* SPI Interface */
         .wb_spi_cyc(wb_spi_cyc),    .wb_spi_stb(wb_spi_stb),    .wb_spi_we(wb_spi_we),
         .wb_spi_ack(wb_spi_ack),    .wb_spi_sel(wb_spi_sel),    .wb_spi_adr(wb_spi_adr),
         .wb_spi_dat(wb_spi_dat),    .wb_spi_rdt(wb_spi_rdt),
+
         /* BUS Interface */
         .wb_bus_cyc(wb_bus_cyc),    .wb_bus_stb(wb_bus_stb),    .wb_bus_we(wb_bus_we),
         .wb_bus_ack(wb_bus_ack),    .wb_bus_sel(wb_bus_sel),    .wb_bus_adr(wb_bus_adr),
@@ -168,7 +198,8 @@ module soc(
 
         .ppmi(ppmi),
         .ppmo(ppmo), .ppms(ppms),
-    
+   
+        .busid(busid), 
         .wb_cyc(wb_gio_cyc),    .wb_stb(wb_gio_stb),    .wb_we(wb_gio_we),
         .wb_sel(wb_gio_sel),    .wb_adr(wb_gio_adr),    .wb_dat(wb_gio_dat),
         .wb_rdt(wb_gio_rdt),    .wb_ack(wb_gio_ack),
@@ -200,6 +231,16 @@ module bussel(
     input   [31:0]  wb_cpu_adr,
     input   [31:0]  wb_cpu_dat,
     output  [31:0]  wb_cpu_rdt,
+
+    /* AUX Interface */
+    input           wb_aux_cyc,
+    input           wb_aux_stb,
+    input           wb_aux_we,
+    output          wb_aux_ack,
+    input   [3:0]   wb_aux_sel,
+    input   [31:0]  wb_aux_adr,
+    input   [31:0]  wb_aux_dat,
+    output  [31:0]  wb_aux_rdt,
     
     /* SPI Interface */
     input           wb_spi_cyc,
@@ -219,47 +260,87 @@ module bussel(
     output  [3:0]   wb_bus_sel,
     output  [31:0]  wb_bus_adr,
     output  [31:0]  wb_bus_dat,
-    input   [31:0]  wb_bus_rdt
+    input   [31:0]  wb_bus_rdt,
+
+    /* Grant Status (bus master ID) */
+    output  [3:0]   busid
 );
 
-    parameter [1:0] state_idle  = 2'b00;
-    parameter [1:0] state_gcpu  = 2'b01;
-    parameter [1:0] state_gspi  = 2'b10;
+    parameter [3:0] state_gcpu  = 4'b0001;
+    parameter [3:0] state_gaux  = 4'b0010;
+    parameter [3:0] state_gspi  = 4'b0100;
+    parameter [3:0] state_idle  = 4'b1000;
     
-    reg [1:0] state = state_idle;
+    reg [3:0] state = state_idle;
     wire grant_cpu = state[0];
-    wire grant_spi = state[1];
-    wire muxsel = grant_spi;
+    wire grant_aux = state[1];
+    wire grant_spi = state[2];
+    assign busid   = state;
+
+    wire cpu_cyc = wb_cpu_cyc & grant_cpu;
+    wire aux_cyc = wb_aux_cyc & grant_aux;
+    wire spi_cyc = wb_spi_cyc & grant_spi;
+
+    wire cpu_stb = wb_cpu_stb & grant_cpu;
+    wire aux_stb = wb_aux_stb & grant_aux;
+    wire spi_stb = wb_spi_stb & grant_spi;
 
     always @(posedge clk) begin
         case (state)
             state_idle: begin // Idle, waiting for transfer to start
                 state <= wb_cpu_cyc ? state_gcpu :
-                            wb_spi_cyc ? state_gspi : state_idle;
+                            wb_aux_cyc ? state_gaux :
+                                wb_spi_cyc ? state_gspi : state_idle;
                 end
-            state_gspi: begin
-                state <= ~wb_spi_cyc ? state_idle : state;
-                end
+
             state_gcpu: begin
                 state <= ~wb_cpu_cyc ? state_idle : state;
                 end
+
+            state_gaux: begin
+                state <= ~wb_aux_cyc ? state_idle : state;
+                end
+
+            state_gspi: begin
+                state <= ~wb_spi_cyc ? state_idle : state;
+                end
+
             default:
                 state <= state_idle; 
         endcase
     end
              
-    assign wb_bus_cyc = muxsel ? (wb_spi_cyc & grant_spi) : (wb_cpu_cyc & grant_cpu);
-    assign wb_bus_stb = muxsel ? (wb_spi_stb & grant_spi) : (wb_cpu_stb & grant_cpu);
-    assign wb_bus_we  = muxsel ? wb_spi_we  : wb_cpu_we;
-    assign wb_bus_sel = muxsel ? wb_spi_sel : wb_cpu_sel;
-    assign wb_bus_adr = muxsel ? wb_spi_adr : wb_cpu_adr;
-    assign wb_bus_dat = muxsel ? wb_spi_dat : wb_cpu_dat;
+    assign wb_bus_cyc = grant_cpu ? cpu_cyc :
+                            grant_aux ? aux_cyc : 
+                                grant_spi ? spi_cyc : 1'b0;
+
+    assign wb_bus_stb = grant_cpu ? cpu_stb :
+                            grant_aux ? aux_stb : 
+                                grant_spi ? spi_stb : 1'b0;
+
+    assign wb_bus_we  = grant_cpu ? wb_cpu_we :
+                            grant_aux ? wb_aux_we :
+                                grant_spi ? wb_spi_we : 1'b0;
+
+    assign wb_bus_sel = grant_cpu ? wb_cpu_sel :
+                            grant_aux ? wb_aux_sel :
+                                grant_spi ? wb_spi_sel : 1'b0;
+
+    assign wb_bus_adr = grant_cpu ? wb_cpu_adr :
+                            grant_aux ? wb_aux_adr :
+                                grant_spi ? wb_spi_adr : 0;
+
+    assign wb_bus_dat = grant_cpu ? wb_cpu_dat :
+                            grant_aux ? wb_aux_dat :
+                                grant_spi ? wb_spi_dat : 0;
     
-    assign wb_spi_rdt = wb_bus_rdt;
     assign wb_cpu_rdt = wb_bus_rdt;
-    
-    assign wb_spi_ack = wb_bus_ack &&  muxsel;
-    assign wb_cpu_ack = wb_bus_ack && ~muxsel;
+    assign wb_aux_rdt = wb_bus_rdt;
+    assign wb_spi_rdt = wb_bus_rdt;
+
+    assign wb_cpu_ack = wb_bus_ack && grant_cpu;
+    assign wb_aux_ack = wb_bus_ack && grant_aux;
+    assign wb_spi_ack = wb_bus_ack && grant_spi;
     
 endmodule
 
