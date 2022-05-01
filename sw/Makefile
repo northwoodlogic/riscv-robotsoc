@@ -1,23 +1,66 @@
 
-all : hello.elf smpblink.elf
+# Add test program names here
+BINS = hello smpblink locktest servopwm servopwmscale
 
-hello.elf: crt0.s hello.c machine.ld
-	riscv32-unknown-elf-gcc -Wall -g -ffreestanding -O2 -Wl,--gc-sections \
-		-nostartfiles  \
-		-Wl,-T,machine.ld -Xlinker -Map=hello.map\
-		crt0.s hello.c -o hello.elf
-	riscv32-unknown-elf-objdump -D hello.elf > hello.asm
-	riscv32-unknown-elf-objcopy -O binary hello.elf hello.bin
-	riscv32-unknown-elf-size hello.elf
+# Real targets start here
+all : $(addsuffix .bin,$(BINS)) $(addsuffix .asm, $(BINS))
 
-smpblink.elf: smpblink.s machine.ld
-	riscv32-unknown-elf-gcc -Wall -g -ffreestanding -O2 -Wl,--gc-sections \
-		-nostartfiles  \
-		-Wl,-T,machine.ld -Xlinker -Map=smpblink.map\
-		smpblink.s -o smpblink.elf
-	riscv32-unknown-elf-objdump -D smpblink.elf > smpblink.asm
-	riscv32-unknown-elf-objcopy -O binary smpblink.elf smpblink.bin
-	riscv32-unknown-elf-size smpblink.elf
+hello.elf: smp0.o hello.o rsio.o
+	$(CC) $(LDFLAGS) $^ -o $@
+
+locktest.elf: smp0.o locktest.o rsio.o
+	$(CC) $(LDFLAGS) $^ -o $@
+
+servopwm.elf: smp0.o servopwm.o rsio.o
+	$(CC) $(LDFLAGS) $^ -o $@
+
+servopwmscale.elf: smp0.o servopwmscale.o rsio.o
+	$(CC) $(LDFLAGS) $^ -o $@
+
+smpblink.elf: smpblink.o
+	$(CC) $(LDFLAGS) $^ -o $@
+
 
 clean :
-	- rm *.elf *.bin *.asm *.map
+	- rm *.o *.elf *.bin *.asm *.map *.su
+
+# ###########################################################################
+# Library stuff
+
+CC      := riscv32-unknown-elf-gcc
+SIZE    := riscv32-unknown-elf-size
+OBJDUMP := riscv32-unknown-elf-objdump
+OBJCOPY := riscv32-unknown-elf-objcopy
+
+# .su files are only generated if -flto is disabled.
+CFLAGS += -Wall -g -ffreestanding -ffunction-sections -fdata-sections -fstack-usage
+LDFLAGS = -Wl,-gc-sections -nostartfiles -Wl,-T,machine.ld -Xlinker -Map=$@.map -Wl,--print-memory-usage
+
+ifeq ($(WITH_SPINLOCK_PROFILE), 1)
+CFLAGS += -DSPINLOCK_PROFILE
+endif
+
+ifneq ($(WITHOUT_O2), 1)
+CFLAGS += -O2
+else
+CFLAGS += -O0
+endif
+
+# Link time optimization will allow inline of functions across compilation
+# units. Inlining can increase code size, but also increase performance.
+ifneq ($(WITHOUT_LTO), 1)
+CFLAGS += -flto
+endif
+
+%.o : %.c
+	$(COMPILE.c) $(OUTPUT_OPTION) $<
+
+%.o : %.S
+	$(COMPILE.S) $(OUTPUT_OPTION) $<
+
+%.bin : %.elf
+	$(OBJCOPY) -O binary $< $@
+	$(SIZE) $<
+
+%.asm : %.elf
+	$(OBJDUMP) -D $< > $@
