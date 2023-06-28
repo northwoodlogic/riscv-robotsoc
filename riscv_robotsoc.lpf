@@ -14,10 +14,10 @@ LOCATE COMP "led[5]" SITE "39";  # D6
 LOCATE COMP "led[6]" SITE "38";  # D7
 LOCATE COMP "led[7]" SITE "37";  # D8
 
-LOCATE COMP "spi_mosi" SITE "31";
-LOCATE COMP "spi_miso" SITE "32";
-LOCATE COMP "spi_clk" SITE "35";
-LOCATE COMP "spi_csn" SITE "28";
+LOCATE COMP "spi_mosi" SITE "31"; # J2-1
+LOCATE COMP "spi_miso" SITE "32"; # J2-3
+LOCATE COMP "spi_clk"  SITE "35"; # J2-5
+LOCATE COMP "spi_csn"  SITE "28"; # J2-6
 
 IOBUF  PORT "ebrake"    PULLMODE=UP;
 LOCATE COMP "ebrake"    SITE "55";  # SW1D (4)
@@ -71,5 +71,48 @@ LOCATE COMP "ppms"    SITE "91";  # J4-27
 
 
 LOCATE COMP "trigger" SITE "104";
+
+# SRAM control
+LOCATE COMP "sr_cs" SITE "142";
+LOCATE COMP "sr_we" SITE "144";
+LOCATE COMP "sr_oe" SITE "143";
+
+# SRAM address
+LOCATE COMP "sr_adr[0]" SITE "119";
+LOCATE COMP "sr_adr[1]" SITE "120";
+LOCATE COMP "sr_adr[2]" SITE "121";
+LOCATE COMP "sr_adr[3]" SITE "122";
+LOCATE COMP "sr_adr[4]" SITE "123";
+LOCATE COMP "sr_adr[5]" SITE "124";
+LOCATE COMP "sr_adr[6]" SITE "125";
+LOCATE COMP "sr_adr[7]" SITE "127";
+LOCATE COMP "sr_adr[8]" SITE "129";
+LOCATE COMP "sr_adr[9]" SITE "130";
+LOCATE COMP "sr_adr[10]" SITE "131";
+LOCATE COMP "sr_adr[11]" SITE "132";
+LOCATE COMP "sr_adr[12]" SITE "133";
+LOCATE COMP "sr_adr[13]" SITE "134";
+LOCATE COMP "sr_adr[14]" SITE "137";
+LOCATE COMP "sr_adr[15]" SITE "138";
+LOCATE COMP "sr_adr[16]" SITE "141";
+
+# bi-dir data bus
+LOCATE COMP "sr_dio[0]" SITE "1";
+LOCATE COMP "sr_dio[1]" SITE "2";
+LOCATE COMP "sr_dio[2]" SITE "5";
+LOCATE COMP "sr_dio[3]" SITE "6";
+LOCATE COMP "sr_dio[4]" SITE "7";
+LOCATE COMP "sr_dio[5]" SITE "8";
+LOCATE COMP "sr_dio[6]" SITE "9";
+LOCATE COMP "sr_dio[7]" SITE "10";
+
+IOBUF  PORT "sr_dio[0]" PULLMODE=UP;
+IOBUF  PORT "sr_dio[1]" PULLMODE=UP;
+IOBUF  PORT "sr_dio[2]" PULLMODE=UP;
+IOBUF  PORT "sr_dio[3]" PULLMODE=UP;
+IOBUF  PORT "sr_dio[4]" PULLMODE=UP;
+IOBUF  PORT "sr_dio[5]" PULLMODE=UP;
+IOBUF  PORT "sr_dio[6]" PULLMODE=UP;
+IOBUF  PORT "sr_dio[7]" PULLMODE=UP;
 
 FREQUENCY 50.000000 MHz;

@@ -1,0 +1,156 @@
+Test Bench
+==========
+
+A test bench exercising the wb_sram module may be executed by typing
+'make' in this directory. It requires iverilog. The result is a vector
+change dump which may be viewed using gtkwave.
+
+Top Level Test Module
+=====================
+
+In addition to the test bench, this module was tested on the FPGA board
+using a top level module that connects the spi-slave to the 32-bit sram
+module as follows. The memory loader program, 'load-bin.sh', was used to
+load and verify several random binary images.
+
+
+    `default_nettype wire
+    module sramtop (
+        input               clk,    // 50MHz
+
+        // SPI port to host system
+        output      spi_miso,
+        input       spi_mosi,
+        input       spi_csn,
+        input       spi_clk,
+        
+        
+        // BS62LV1027SC-70
+        output          sr_cs,  // active low, 0 == selected
+        output          sr_we,  // active low, 0 == write cycle, 1 == read cycle
+        output          sr_oe,  // active low, 0 == sram drives dio if read cycle
+        output  [16:0]  sr_adr, // external bus address 1Mbit
+        inout   [7:0]   sr_dio  // external bus data i/o
+    );
+
+
+        wire [23:0] wb_adr;
+        wire [31:0] wb_dat;
+        wire [31:0] wb_rdt;
+        wire [3:0]  wb_sel;
+        wire        wb_we;
+        wire        wb_cyc;
+        wire        wb_stb;
+        wire        sb_ack;
+
+        wb_spis_master spim (
+            .clk(clk),
+            
+            // SPI slave signals
+            .spi_csn(spi_csn),
+            .spi_clk(spi_clk),
+            .spi_mosi(spi_mosi),
+            .spi_miso(spi_miso),
+            
+            // wishbone bus signals
+            .adr_o(wb_adr),
+            .dat_o(wb_dat),
+            .dat_i(wb_rdt),
+            .sel_o(wb_sel),
+            .we_o(wb_we),
+            .cyc_o(wb_cyc),
+            .stb_o(wb_stb),
+            .ack_i(wb_ack)
+        );
+
+        wb_sram sram(
+            .clk(clk),    // 50MHz
+            .rst(1'b0),
+
+            // Wishbone
+            .adr_i(wb_adr),    // bus address (byte, lower two bits are auto incremented in sram)
+            .dat_i(wb_dat),
+            .dat_o(wb_rdt),
+            .sel_i(wb_sel),
+            .we_i(wb_we),
+            .cyc_i(wb_cyc),
+            .stb_i(wb_stb),
+            .ack_o(wb_ack),
+            
+            // BS62LV1027SC-70
+            .sr_cs(sr_cs),  // active low, 0 == selected
+            .sr_we(sr_we),  // active low, 0 == write cycle, 1 == read cycle
+            .sr_oe(sr_oe),  // active low, 0 == sram drives dio if read cycle
+            .sr_adr(sr_adr), // external bus address 1Mbit
+            .sr_dio(sr_dio)  // external bus data i/o
+        );
+
+    endmodule
+
+
+LPF Constraints
+===============
+
+This test used LPF Constraints as follows:
+
+    BLOCK RESETPATHS;
+    BLOCK ASYNCPATHS;
+
+    IOBUF ALLPORTS IO_TYPE=LVCMOS33 PULLMODE=NONE;
+
+    IOBUF PORT "clk" IO_TYPE=LVCMOS33 PULLMODE=UP ;
+
+    LOCATE COMP "clk" SITE "21";
+
+    LOCATE COMP "spi_mosi" SITE "31"; # J2-1
+    LOCATE COMP "spi_miso" SITE "32"; # J2-3
+    LOCATE COMP "spi_clk"  SITE "35"; # J2-5
+    LOCATE COMP "spi_csn"  SITE "28"; # J2-6
+
+    # SRAM control
+    LOCATE COMP "sr_cs" SITE "142";
+    LOCATE COMP "sr_we" SITE "144";
+    LOCATE COMP "sr_oe" SITE "143";
+
+    # SRAM address
+    LOCATE COMP "sr_adr[0]" SITE "119";
+    LOCATE COMP "sr_adr[1]" SITE "120";
+    LOCATE COMP "sr_adr[2]" SITE "121";
+    LOCATE COMP "sr_adr[3]" SITE "122";
+    LOCATE COMP "sr_adr[4]" SITE "123";
+    LOCATE COMP "sr_adr[5]" SITE "124";
+    LOCATE COMP "sr_adr[6]" SITE "125";
+    LOCATE COMP "sr_adr[7]" SITE "127";
+    LOCATE COMP "sr_adr[8]" SITE "129";
+    LOCATE COMP "sr_adr[9]" SITE "130";
+    LOCATE COMP "sr_adr[10]" SITE "131";
+    LOCATE COMP "sr_adr[11]" SITE "132";
+    LOCATE COMP "sr_adr[12]" SITE "133";
+    LOCATE COMP "sr_adr[13]" SITE "134";
+    LOCATE COMP "sr_adr[14]" SITE "137";
+    LOCATE COMP "sr_adr[15]" SITE "138";
+    LOCATE COMP "sr_adr[16]" SITE "141";
+
+    # bi-dir data bus
+    LOCATE COMP "sr_dio[0]" SITE "1";
+    LOCATE COMP "sr_dio[1]" SITE "2";
+    LOCATE COMP "sr_dio[2]" SITE "5";
+    LOCATE COMP "sr_dio[3]" SITE "6";
+    LOCATE COMP "sr_dio[4]" SITE "7";
+    LOCATE COMP "sr_dio[5]" SITE "8";
+    LOCATE COMP "sr_dio[6]" SITE "9";
+    LOCATE COMP "sr_dio[7]" SITE "10";
+
+    IOBUF  PORT "sr_dio[0]" PULLMODE=UP;
+    IOBUF  PORT "sr_dio[1]" PULLMODE=UP;
+    IOBUF  PORT "sr_dio[2]" PULLMODE=UP;
+    IOBUF  PORT "sr_dio[3]" PULLMODE=UP;
+    IOBUF  PORT "sr_dio[4]" PULLMODE=UP;
+    IOBUF  PORT "sr_dio[5]" PULLMODE=UP;
+    IOBUF  PORT "sr_dio[6]" PULLMODE=UP;
+    IOBUF  PORT "sr_dio[7]" PULLMODE=UP;
+
+
+    FREQUENCY 50.000000 MHz;
+
+
