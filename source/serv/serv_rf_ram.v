@@ -9,7 +9,7 @@ module serv_rf_ram
     input wire [$clog2(depth)-1:0] i_raddr,
     output wire [width-1:0] 	   o_rdata);
 
-   reg [width-1:0] 		   memory [0:depth-1];
+   reg [width-1:0] 		   memory [0:depth-1]; /* synthesis syn_ramstyle="distributed" */
    reg [width-1:0] 		   rdata ;
 
    always @(posedge i_clk) begin
