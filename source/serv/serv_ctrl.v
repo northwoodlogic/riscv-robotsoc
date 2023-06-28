@@ -10,6 +10,7 @@ module serv_ctrl
    input wire 	     i_pc_en,
    input wire 	     i_cnt12to31,
    input wire 	     i_cnt0,
+   input wire        i_cnt1,
    input wire 	     i_cnt2,
    //Control
    input wire 	     i_jump,
@@ -17,6 +18,7 @@ module serv_ctrl
    input wire 	     i_utype,
    input wire 	     i_pc_rel,
    input wire 	     i_trap,
+   input wire        i_iscomp,
    //Data
    input wire 	     i_imm,
    input wire 	     i_buf,
@@ -42,14 +44,16 @@ module serv_ctrl
    wire       offset_a;
    wire       offset_b;
 
-   assign plus_4        = i_cnt2;
+  /*  If i_iscomp=1: increment pc by 2 else increment pc by 4  */
+
+   assign plus_4        = i_iscomp ? i_cnt1 : i_cnt2;
 
    assign o_bad_pc = pc_plus_offset_aligned;
 
    assign {pc_plus_4_cy,pc_plus_4} = pc+plus_4+pc_plus_4_cy_r;
 
    generate
-      if (WITH_CSR)
+      if (|WITH_CSR)
 	assign new_pc = i_trap ? (i_csr_pc & !i_cnt0) : i_jump ? pc_plus_offset_aligned : pc_plus_4;
       else
 	assign new_pc = i_jump ? pc_plus_offset_aligned : pc_plus_4;
